@@ -112,7 +112,7 @@ The extension is designed with a local-first approach for performance and privac
    git clone https://github.com/parthtyagi9/snatchy.git
    cd snatchy
 
-2. Open Chrome and go to chrome://extensions/
+2. Open Chrome and go to chrome://extensions/snatchy (Work in prog)
 
 3. Enable Developer Mode
 
