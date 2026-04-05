@@ -36,6 +36,11 @@ The extension is designed with a local-first approach for performance and privac
 * Privacy-first design
   Local mode does not send data externally
 
+* Text History & Sync
+  All extracted texts are saved to user account
+  Accessible across devices via web dashboard
+  Search and filter extracted texts by date, URL, or content
+
 ---
 
 ## Modes
@@ -86,22 +91,36 @@ The extension is designed with a local-first approach for performance and privac
 * Basic Mode: Tesseract.js (WebAssembly, runs in-browser)
 * Advanced Mode: Backend API with cloud OCR / vision model
 
-### Backend (Optional)
+### Backend (Java Spring Boot)
 
-* API endpoint for AI-enhanced OCR
-* Authentication and rate limiting
-* Usage tracking
-* Subscription and billing logic
+* REST API endpoints for text extraction, history, and user management
+* JWT-based authentication and authorization
+* Cloud vision API integration (Google Vision or Azure Computer Vision)
+* Rate limiting and usage tracking
+* User account and subscription management
+* Text history persistence in PostgreSQL
 
 ---
 
 ## Tech Stack
 
-* JavaScript or TypeScript
+### Chrome Extension Frontend
+* TypeScript / JavaScript
 * Chrome Extensions API (Manifest V3)
-* Tesseract.js for local OCR
-* Node.js and Express (backend, optional)
-* Cloud OCR / Vision APIs for advanced mode
+* Tesseract.js for local OCR (WebAssembly)
+* Chrome Storage API for local history backup
+
+### Backend (Java)
+* Spring Boot 3.x
+* Spring Web (REST API)
+* Spring Data JPA / Hibernate (ORM)
+* Spring Security + JWT (authentication)
+* PostgreSQL (database)
+* Google Cloud Vision API or Azure Computer Vision (advanced OCR)
+
+### Database
+* PostgreSQL 14+
+* JPA / Hibernate for ORM mapping
 
 ---
 
@@ -119,6 +138,116 @@ The extension is designed with a local-first approach for performance and privac
 4. Click "Load unpacked"
 
 5. Select the project directory
+
+---
+
+## Database Schema
+
+### Users Table
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    subscription_tier VARCHAR(50) DEFAULT 'FREE',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Extracted Texts Table
+```sql
+CREATE TABLE extracted_texts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    original_text TEXT NOT NULL,
+    page_url VARCHAR(500),
+    image_source VARCHAR(500),
+    extraction_mode VARCHAR(50) NOT NULL, -- 'LOCAL' or 'ADVANCED'
+    confidence_score FLOAT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+
+    INDEX idx_user_id (user_id),
+    INDEX idx_created_at (created_at)
+);
+```
+
+### Usage Statistics Table
+```sql
+CREATE TABLE usage_stats (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    extractions_count INT DEFAULT 0,
+    local_mode_count INT DEFAULT 0,
+    advanced_mode_count INT DEFAULT 0,
+    month DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+
+    UNIQUE (user_id, month),
+    INDEX idx_user_month (user_id, month)
+);
+```
+
+### API Keys Table (for advanced mode quota tracking)
+```sql
+CREATE TABLE api_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    key_hash VARCHAR(255) UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP,
+
+    INDEX idx_user_id (user_id)
+);
+```
+
+---
+
+## Backend Setup (Java Spring Boot)
+
+### Prerequisites
+* Java 17 or higher
+* Spring Boot 3.x
+* PostgreSQL 14+
+* Maven 3.8+
+
+### Database Migration
+Create the PostgreSQL database:
+```bash
+createdb snatchy_db
+```
+
+Run Spring Boot with migration enabled:
+```bash
+mvn spring-boot:run
+```
+
+Spring Boot will automatically run Flyway or Liquibase migrations to create tables.
+
+### REST API Endpoints
+
+**Authentication:**
+- `POST /api/auth/register` - Create new user account
+- `POST /api/auth/login` - Authenticate and receive JWT token
+
+**Text History:**
+- `POST /api/texts` - Save extracted text (requires JWT)
+- `GET /api/texts` - Retrieve user's text history with pagination (requires JWT)
+- `GET /api/texts/{id}` - Get specific text entry (requires JWT)
+- `DELETE /api/texts/{id}` - Delete text entry (requires JWT)
+- `GET /api/texts/search?query=...` - Search text history (requires JWT)
+
+**Advanced OCR:**
+- `POST /api/ocr/advanced` - Extract text using cloud vision API (requires JWT, Pro tier)
+
+**User Profile:**
+- `GET /api/users/profile` - Get user details (requires JWT)
+- `PUT /api/users/profile` - Update user profile (requires JWT)
 
 ---
 
