@@ -1,23 +1,42 @@
 # Snatchy Extension
 
-Take text from anywhere on the web, even where it is not selectable.
+Snatchy is a privacy-first Chrome Extension that extracts selectable text from images and non-selectable web content using local OCR.
 
-**Snatchy** is a Chrome extension that allows users to extract and copy text from images, scanned documents, and other non-selectable content using OCR technology.
+The public extension repo is the product-facing half of a full-stack portfolio project. It demonstrates Chrome Manifest V3, TypeScript, content scripts, service workers, DOM overlays, browser storage, Tesseract.js OCR, and an optional Spring Boot backend integration.
 
-[**Backend Repository**](https://github.com/parthtyagi9/Snatchy-Backend) (Private) · [**Issues**](https://github.com/parthtyagi9/Snatchy-Extension/issues)
+## Demo
 
----
+Add a short GIF or screenshots here after building the first demo:
 
-## Overview
+- Image hover state with the Snatchy action
+- Local OCR loading state
+- Selectable text overlay
+- Popup settings for advanced backend mode
 
-Many websites contain text inside images, screenshots, or rendered canvases where normal copy and paste does not work. Snatchy solves this by detecting text inside images and overlaying selectable regions directly on the page.
+## Engineering Highlights
 
-The extension is designed with a **local-first approach** for performance and privacy, with an optional advanced mode for improved accuracy on difficult extractions.
+- **Chrome Extension / Manifest V3:** content script injection, service worker lifecycle, popup UI, and scoped browser permissions.
+- **Local-first OCR:** Tesseract.js runs in the browser so the default extraction path does not send user images to a server.
+- **Selectable DOM overlay:** extracted text is rendered as normal selectable text instead of a dead screenshot or copied-only modal.
+- **Advanced mode hook:** optional backend URL and JWT settings connect to a private Spring Boot API for provider-backed OCR.
+- **Testable TypeScript:** settings normalization is isolated and covered with Vitest.
 
----
+## Architecture
 
-## Features
+```text
+Web page image
+    |
+    v
+Content script hover detector
+    |
+    +--> Local OCR with Tesseract.js
+    |
+    +--> Optional /api/ocr/advanced backend call
+    |
+    v
+Selectable DOM overlay
 
+<<<<<<< HEAD
 * **Hover-based interaction** - A small button appears when you hover over an image
 * **Selectable text overlay** - Text is rendered as selectable regions on top of images
 * **Standard copy behavior** - Use normal keyboard shortcuts to copy extracted text
@@ -95,91 +114,52 @@ The extension is designed with a **local-first approach** for performance and pr
 ├─────────────────────────────┤
 │  Optional Backend API       │  Advanced OCR (if configured)
 └─────────────────────────────┘
+=======
+Popup settings -> Chrome Storage Sync -> Content script runtime config
+>>>>>>> 2747555 (changes made pushing)
 ```
 
-### Backend Configuration
+## Tech Stack
 
-To enable Advanced Mode, configure the backend API endpoint in `config.js`:
+- TypeScript
+- Chrome Extensions Manifest V3
+- Tesseract.js / WebAssembly OCR
+- Chrome Storage API
+- Vite
+- Vitest
 
-```javascript
-// config.js
-const API_CONFIG = {
-  backendUrl: ‘https://your-backend-domain.com’,
-  apiKey: ‘your-api-key’, // or use Chrome authentication flow
-  enableAdvancedMode: true,
-};
+## Local Development
+
+```bash
+npm install
+npm test
+npm run build
 ```
 
-The extension will send image data to your backend only when users explicitly request Advanced Mode.
+Then load the built extension:
 
----
+1. Open `chrome://extensions/`
+2. Enable Developer Mode
+3. Click **Load unpacked**
+4. Select the `dist` directory
 
-## API Integration (Optional)
+## Advanced Backend Mode
 
-If you’re running the [Snatchy Backend](https://github.com/parthtyagi9/Snatchy-Backend), the extension will communicate via these endpoints:
+The extension defaults to local OCR. Advanced mode can be enabled from the popup with:
 
-* `POST /api/auth/login` - Authenticate
-* `POST /api/ocr/advanced` - Extract text using advanced OCR
-* `POST /api/texts` - Save extraction history (optional)
-* `GET /api/texts` - Retrieve extraction history (optional)
+- `backendUrl`, default `http://localhost:8080`
+- `advancedModeEnabled`, default `false`
+- `authToken`, JWT from the private backend
+- `localOcrLanguage`, default `eng`
 
-See the [Backend Repository](https://github.com/parthtyagi9/Snatchy-Backend) for full API documentation.
+Advanced mode calls:
 
----
+- `POST /api/ocr/advanced`
 
-## How It Works
+The backend repository is private and contains the Spring Boot API for JWT auth, OCR history, usage tracking, provider abstraction, Dockerized PostgreSQL, and integration tests.
 
-1. User hovers over an image
-2. Extension overlay detects the image
-3. "Extract Text" button appears on hover
-4. User clicks the button
-5. **Local Mode:** Tesseract.js processes immediately
-   - OR
-   **Advanced Mode:** Image sent to backend for processing
-6. Text results rendered as selectable overlays
-7. User selects and copies text normally
+## Resume Bullets
 
----
-
-## Limitations
-
-* Handwriting recognition is limited in local mode
-* Very low-resolution images may reduce accuracy
-* Complex layouts work better in advanced mode
-* Some cross-origin images may not be accessible due to browser security
-* CORS restrictions may apply when connecting to backend
-
----
-
-## Roadmap
-
-* Region-based selection (drag to scan specific areas)
-* Translation of extracted text
-* Summarization of content
-* Batch OCR support
-* Local history of extractions
-* Settings panel for advanced configuration
-
----
-
-## Contributing
-
-Contributions are welcome! Please open an issue before making major changes to discuss the approach.
-
-### Development Guidelines
-* Fork the repository
-* Create a feature branch
-* Test thoroughly in Chrome Developer Mode
-* Submit a pull request
-
----
-
-## License
-
-MIT License - See LICENSE file for details
-
----
-
-## Related Projects
-
-* **[Snatchy Backend](https://github.com/parthtyagi9/Snatchy-Backend)** (Private) - Optional Java/Spring Boot backend for advanced OCR, user accounts, and history tracking
+- Built a privacy-first Chrome Extension using Manifest V3, content scripts, and Tesseract.js to extract selectable text from images and non-selectable web content.
+- Implemented a TypeScript OCR workflow with hover detection, browser storage settings, local OCR, advanced backend configuration, and selectable DOM overlays.
+- Designed the extension as the public frontend for a full-stack OCR system backed by a private Spring Boot, PostgreSQL, JWT, and Docker architecture.
